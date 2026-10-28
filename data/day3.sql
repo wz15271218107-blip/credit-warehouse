@@ -13,15 +13,19 @@ create table dwd.loan_dwd as
 select
 	id,
     loan_amnt,
-    int_rate,
+    case when trim(int_rate) = '' then NULL
+		else cast(replace(trim(int_rate), '%', '') as decimal(6,4)) / 100
+	end as int_rate,
     term,
     installment,
     annual_inc,
-    emp_title,
+    case when emp_title is NULL or trim(emp_title) = '' then 'Unknown'
+		else trim(emp_title)
+	end as emp_title,
     emp_length,
     home_ownership,
     addr_state,
-    issue_d,
+    STR_TO_DATE(CONCAT(issue_d, '-01'), '%b-%Y-%d') as issue_d,
     replace(loan_status, '  ', ' ') as loan_status,
     case when replace(loan_status, '  ', ' ') in ('Charged Off', 'Default', 'Does not meet the credit policy. Status:Charged Off')
 		then 1 else 0 end as is_default
@@ -33,4 +37,9 @@ where id <> ''
                       
 select count(*) from dwd.loan_dwd;
 select is_default, count(*) from dwd.loan_dwd group by is_default;
-select * from dwd.loan_dwd limit 5;
+select issue_d, int_rate, emp_title from dwd.loan_dwd limit 5;
+select count(*) from dwd.loan_dwd where issue_d is NULL;
+select min(int_rate), max(int_rate), avg(int_rate) from dwd.loan_dwd;
+
+select count(*) as total, count(distinct id) as distinct_id from dwd.loan_dwd;
+
